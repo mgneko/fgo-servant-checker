@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FGO 英靈檢核表 vFinal</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<header id="top-bar">
+    <div class="controls">
+        <div class="btn-group">
+            <button id="btn-server-tw" onclick="app.setServer('TW')">台GO</button>
+            <button id="btn-server-jp" onclick="app.setServer('JP')">日GO</button>
+        </div>
+
+        <div class="btn-group">
+            <button onclick="app.exportSave()">匯出</button>
+            <label for="input-save-file" class="file-btn">匯入</label>
+            <input type="file" id="input-save-file" accept=".json" onchange="app.importSave(this)">
+            <button onclick="app.generateImage()" style="background:#00695c; color:white; border:none;">截圖</button>
+        </div>
+        
+        <div class="btn-group">
+            <button id="btn-np" class="active" onclick="app.setMode('edit_np')">設定寶具</button>
+            <button id="btn-mark" onclick="app.setMode('edit_mark')">標記</button>
+        </div>
+
+        <div class="btn-group" style="border:none">
+            <button onclick="app.clearAll()" style="color:#ff6b6b">清空</button>
+        </div>
+    </div>
+</header>
+
+<main id="capture-area">
+    </main>
+
+<div style="height: 60px;"></div>
+
+<footer>
+    <div class="stat-item">持有數: <span id="stat-count" class="stat-val">0</span></div>
+    <div class="stat-item">持有率: <span id="stat-rate" class="stat-val">0%</span></div>
+    <div class="stat-item">總寶具等級: <span id="stat-np" class="stat-val">0</span></div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
