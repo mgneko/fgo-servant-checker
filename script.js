@@ -215,18 +215,23 @@ const app = (function() {
         document.getElementById('stat-np').innerText = totalNp;
     }
 
-    // ========= 截圖邏輯 V5.5 (維持不變) =========
+// ========= 截圖邏輯 V6.0 (修復模糊、縮放與存檔問題) =========
     function generateImage() {
         const original = document.getElementById("capture-area");
         const footer = document.querySelector("footer");
         const currentScrollY = window.scrollY;
         
+        // 顯示讀取中提示 (選用)
+        const originalBtnText = event.target.innerText;
+        event.target.innerText = "截圖生成中...";
+
+        // 1. 建立沙盒 (強制 1280px)
         const sandbox = document.createElement("div");
         Object.assign(sandbox.style, {
             position: "absolute",
             top: "0",
             left: "0",
-            width: "1280px",
+            width: "1280px", // 鎖定寬度
             backgroundColor: "#1a1a2e",
             zIndex: "-9999",
             margin: "0",
@@ -234,9 +239,11 @@ const app = (function() {
             overflow: "visible"
         });
 
+        // 2. 複製內容
         const contentClone = original.cloneNode(true);
         sandbox.appendChild(contentClone);
 
+        // 強制 Grid 樣式 (確保手機上排版正確)
         const styleReset = document.createElement("style");
         styleReset.innerHTML = `
             .servant-grid {
@@ -244,9 +251,12 @@ const app = (function() {
                 grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
                 gap: 8px !important;
             }
+            /* 稍微加大字體以防縮圖模糊 */
+            .np-level { font-size: 1rem !important; } 
         `;
         sandbox.appendChild(styleReset);
 
+        // 3. 複製頁尾
         const footerClone = footer.cloneNode(true);
         Object.assign(footerClone.style, {
             position: "static",
@@ -262,55 +272,97 @@ const app = (function() {
 
         document.documentElement.appendChild(sandbox);
 
+        // 4. 等待排版並截圖
         setTimeout(() => {
+            // ★ 修正1: 動態測量精確高度，不再使用 20000px
             const fullHeight = sandbox.scrollHeight;
+            
             window.scrollTo(0, 0);
 
             html2canvas(sandbox, {
-                scale: 1.5, 
+                scale: 2, // ★ 修正2: 提高解析度 (2倍)，解決模糊問題
                 useCORS: true,
                 backgroundColor: "#1a1a2e",
                 width: 1280,
-                height: fullHeight,
+                height: fullHeight, 
                 windowWidth: 1280,
-                windowHeight: fullHeight,
+                windowHeight: fullHeight, // 使用內容的真實高度
                 x: 0,
                 y: 0,
                 scrollX: 0,
                 scrollY: 0
             }).then(canvas => {
+                // 清理 DOM
                 document.documentElement.removeChild(sandbox);
                 window.scrollTo(0, currentScrollY);
+                event.target.innerText = originalBtnText; // 還原按鈕文字
 
-                const imgData = canvas.toDataURL("image/png");
-                const newWindow = window.open('about:blank', '_blank');
-                
-                if (newWindow) {
-                    newWindow.document.write(`
-                        <html>
-                            <head>
-                                <title>FGO Snapshot</title>
-                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                                <style>
-                                    body { margin:0; background:#111; overflow-y:auto; padding:20px; text-align:center; min-height:100vh; }
-                                    img { max-width:100%; height:auto; box-shadow:0 0 20px #000; display:inline-block; border:1px solid #333; }
-                                    .tip { color:#888; margin-top:15px; font-family:sans-serif; font-size:14px; padding-bottom:20px; }
-                                </style>
-                            </head>
-                            <body>
-                                <img src="${imgData}">
-                                <div class="tip">長按圖片即可儲存</div>
-                            </body>
-                        </html>
-                    `);
-                    newWindow.document.close();
-                } else {
-                    alert("請允許彈出視窗以查看截圖");
-                }
+                // ★ 修正3: 改用 Blob URL 取代 Base64，解決無法長按存檔的問題
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const newWindow = window.open('about:blank', '_blank');
+                    
+                    if (newWindow) {
+                        newWindow.document.write(`
+                            <!DOCTYPE html>
+                            <html>
+                                <head>
+                                    <title>FGO Snapshot</title>
+                                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                    <style>
+                                        body { 
+                                            margin: 0; 
+                                            background: #111; 
+                                            display: flex; 
+                                            flex-direction: column; 
+                                            align-items: center; 
+                                            min-height: 100vh;
+                                        }
+                                        img { 
+                                            width: 100%;       /* 圖片自動適應螢幕寬度 */
+                                            max-width: 1280px; /* 電腦版不超過原圖大小 */
+                                            height: auto; 
+                                            display: block;
+                                            box-shadow: 0 0 10px #000;
+                                        }
+                                        .tip { 
+                                            color: #aaa; 
+                                            margin: 20px; 
+                                            font-family: sans-serif; 
+                                            font-size: 16px; 
+                                            text-align: center;
+                                            padding-bottom: 30px;
+                                        }
+                                        .dl-btn {
+                                            margin-top: 20px;
+                                            padding: 10px 20px;
+                                            background: #e94560;
+                                            color: white;
+                                            text-decoration: none;
+                                            border-radius: 5px;
+                                            font-family: sans-serif;
+                                            font-weight: bold;
+                                        }
+                                    </style>
+                                </head>
+                                <body>
+                                    <img src="${url}" alt="FGO Checklist">
+                                    <a href="${url}" download="fgo_checklist.png" class="dl-btn">下載圖片</a>
+                                    <div class="tip">若無法下載，請長按圖片選擇「加入照片」</div>
+                                </body>
+                            </html>
+                        `);
+                        newWindow.document.close();
+                    } else {
+                        alert("請允許彈出視窗以查看截圖");
+                    }
+                }, 'image/png');
+
             }).catch(err => {
                 console.error(err);
                 if(sandbox.parentNode) sandbox.parentNode.removeChild(sandbox);
                 window.scrollTo(0, currentScrollY);
+                event.target.innerText = originalBtnText;
                 alert("截圖失敗");
             });
         }, 400);
@@ -366,5 +418,6 @@ const app = (function() {
     return {
         setMode, setServer, generateImage, exportSave, importSave, clearAll
     };
+
 
 })();
