@@ -40,7 +40,7 @@ const app = (function() {
     const campaigns = {
         'default': {
             name: '一般檢視 (依職階)',
-            type: 'class' // 標記為 class 類型，不顯示期望值儀表板
+            type: 'class'
         },
         // --- 範例 1：混合職階 (三騎士 vs 四騎士) ---
         'gssr_mixed': {
@@ -52,12 +52,12 @@ const app = (function() {
                 'EXTRA 職階': [...servents['ruler'], ...servents['avenger'], ...servents['alterego'], ...servents['foreigner'], ...servents['mooncancer'], ...servents['pretender'], ...servents['beast']]
             }
         },
-        // --- 範例 2：年份分組 (模擬 ID 範圍) ---
+        // --- 範例 2：年份分組 ---
         'gssr_year': {
             name: '【福袋】依照年份區分',
             type: 'custom',
             groups: {
-                '2015 ~ 2017 (初期)': [2, 8, 12, 37, 60, 65, 70, 75, 96], // 僅為範例 ID
+                '2015 ~ 2017 (初期)': [2, 8, 12, 37, 60, 65, 70, 75, 96],
                 '2018 ~ 2020 (中期)': [196, 198, 201, 212, 224, 237, 268],
                 '2021 ~ 2024 (近期)': [316, 353, 377, 417, 431, 444, 459]
             }
@@ -67,7 +67,7 @@ const app = (function() {
             name: '【特選】輔助角色 Pick Up',
             type: 'custom',
             groups: {
-                '人權輔助 (必抽)': [37, 62, 113, 237, 284, 307, 327, 316], // 諸葛孔明, 玉藻前, 梅林, 術師匠, 術傻, 鶴小姐, 殺狐, 奧伯龍 (對應 ID 需確認)
+                '人權輔助 (必抽)': [37, 62, 113, 237, 284, 307, 327, 316],
                 '高難對策': [150, 169, 215]
             }
         }
@@ -182,10 +182,16 @@ const app = (function() {
     // ==========================================
     function render() {
         const appEl = document.getElementById('capture-area');
+        const footer = document.querySelector('footer'); // 獲取 footer 元素
         appEl.innerHTML = ''; 
         
         const campaignConfig = campaigns[currentCampaign] || campaigns['default'];
         const isCustomCampaign = campaignConfig.type === 'custom';
+
+        // ★ 修改：如果是福袋模式，隱藏 Footer；一般模式則顯示
+        if (footer) {
+            footer.style.display = isCustomCampaign ? 'none' : 'block';
+        }
 
         let groupsToRender = {};
         let orderToRender = [];
@@ -218,17 +224,15 @@ const app = (function() {
             section.className = 'class-section';
             
             let headerHtml = '';
-            let statsHtml = ''; // 預設為空 (一般模式不顯示)
+            let statsHtml = ''; 
 
             if (!isCustomCampaign) {
-                // 一般模式標題
                 const iconUrl = classIcons[groupKey] || classIcons['saber'];
                 headerHtml = `<div class="class-header"><img src="${iconUrl}" class="class-icon-img" alt="${groupKey}"></div>`;
             } else {
-                // 福袋模式標題 + 機率儀表板
                 headerHtml = `<div class="class-header"><h3 style="color:#ffd700; margin:0; font-size:1.1rem; border-left:4px solid #e94560; padding-left:10px;">${groupKey}</h3></div>`;
 
-                // ★ 期望值計算 (僅在福袋模式顯示)
+                // 期望值計算
                 const total = list.length;
                 const newCount = list.filter(s => !userState.owned[s.id]).length;
                 const newRate = total > 0 ? ((newCount / total) * 100).toFixed(1) : 0;
@@ -239,7 +243,6 @@ const app = (function() {
                 const np5Count = list.filter(s => userState.owned[s.id] >= 5).length;
                 const np5Rate = total > 0 ? ((np5Count / total) * 100).toFixed(1) : 0;
 
-                // ★ 儀表板文字已更新
                 statsHtml = `
                     <div class="pool-stats">
                         <div class="stat-item type-new">
@@ -273,6 +276,7 @@ const app = (function() {
             list.forEach(servant => grid.appendChild(createCard(servant)));
         });
         
+        // 僅在一般模式更新全域統計 (雖然福袋模式隱藏了footer，但更新數據無妨)
         updateStats();
     }
 
@@ -354,7 +358,7 @@ const app = (function() {
     }
 
     // ==========================================
-    // 5. 截圖功能 (Screenshot - v6.2 Optimized)
+    // 5. 截圖功能 (Screenshot)
     // ==========================================
     function generateImage() {
         const original = document.getElementById("capture-area");
@@ -381,12 +385,17 @@ const app = (function() {
         `;
         sandbox.appendChild(styleReset);
 
-        const footerClone = footer.cloneNode(true);
-        Object.assign(footerClone.style, {
-            position: "static", width: "100%", transform: "none", backgroundColor: "#16213e",
-            borderTop: "1px solid #444", padding: "20px 0", textAlign: "center", marginTop: "20px"
-        });
-        sandbox.appendChild(footerClone);
+        // ★ 修改：只有在「一般模式」下才複製頁尾
+        // currentCampaign === 'default' 時 footer 才會顯示，因此這裡只要判斷是否為 default
+        if (currentCampaign === 'default' && footer) {
+            const footerClone = footer.cloneNode(true);
+            Object.assign(footerClone.style, {
+                position: "static", width: "100%", transform: "none", backgroundColor: "#16213e",
+                borderTop: "1px solid #444", padding: "20px 0", textAlign: "center", marginTop: "20px",
+                display: "block" // 強制顯示 (因為原本可能是 none)
+            });
+            sandbox.appendChild(footerClone);
+        }
 
         document.documentElement.appendChild(sandbox);
 
@@ -504,4 +513,3 @@ const app = (function() {
     };
 
 })();
-
