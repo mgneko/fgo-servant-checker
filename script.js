@@ -395,7 +395,7 @@ const app = (function() {
             window.scrollTo(0, 0);
 
             html2canvas(sandbox, {
-                scale: 0.6, 
+                scale: 1.0, 
                 useCORS: true,
                 backgroundColor: "#1a1a2e",
                 width: 1280, height: fullHeight, 
@@ -504,3 +504,4 @@ const app = (function() {
     };
 
 })();
+
