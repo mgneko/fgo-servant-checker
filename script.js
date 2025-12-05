@@ -360,8 +360,8 @@ const app = (function() {
         document.getElementById('stat-np').innerText = totalNp;
     }
 
-// ==========================================
-    // 5. 截圖功能 (Screenshot - v8.8 Stable Fix)
+    // ==========================================
+    // 5. 截圖功能 (Screenshot - v8.9 Sticky Bottom)
     // ==========================================
     function generateImage() {
         const original = document.getElementById("capture-area");
@@ -372,28 +372,42 @@ const app = (function() {
         const originalBtnText = btn ? btn.innerText : "截圖";
         if(btn) { btn.innerText = "處理中..."; btn.disabled = true; }
 
-        // 1. 建立沙盒
-        // ★ 回歸 display: block (預設)，避免 Flex 導致內部 Grid 寬度計算錯誤
+        // 1. 建立沙盒 (Sandbox)
+        // 使用 Flex Column 排版，並設定最小高度，確保圖片有份量
         const sandbox = document.createElement("div");
         Object.assign(sandbox.style, {
-            position: "absolute", top: "0", left: "0", width: "1280px",
-            backgroundColor: "#1a1a2e", zIndex: "-9999", margin: "0", padding: "0", overflow: "visible",
-            display: "block" 
+            position: "absolute", top: "0", left: "0", 
+            width: "1280px",
+            minHeight: "800px", // ★ 設定最小高度 (避免內容太少時圖片過扁)
+            backgroundColor: "#1a1a2e", 
+            zIndex: "-9999", 
+            margin: "0", padding: "0", 
+            overflow: "visible",
+            display: "flex",            // ★ 啟用 Flex
+            flexDirection: "column"     // ★ 垂直排列
         });
 
-        // 2. 複製主要內容
-        const contentClone = original.cloneNode(true);
-        sandbox.appendChild(contentClone);
+        // 2. 建立內容包裝層 (Content Wrapper)
+        // 這個區塊會自動長大 (flex: 1)，把浮水印推到最下面
+        const contentWrapper = document.createElement("div");
+        Object.assign(contentWrapper.style, {
+            flex: "1",          // ★ 佔滿剩餘空間 (關鍵)
+            width: "100%",      // ★ 強制寬度 (修復 v8.7 跑版問題)
+            display: "block"    // 內部維持 Block 排版，讓 Grid 正常運作
+        });
 
-        // 強制 CSS
-        // 這裡確保 Grid 能夠吃滿 1280px 的寬度
+        // 3. 複製主要內容 -> 放入 Wrapper
+        const contentClone = original.cloneNode(true);
+        contentWrapper.appendChild(contentClone);
+
+        // 強制 CSS (Grid 設定)
         const styleReset = document.createElement("style");
         styleReset.innerHTML = `
             .servant-grid { 
                 display: grid !important; 
                 grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; 
                 gap: 8px !important; 
-                width: 100% !important; /* 強制寬度 */
+                width: 100% !important; 
                 box-sizing: border-box !important;
             }
             .np-level { font-size: 1rem !important; } 
@@ -401,7 +415,8 @@ const app = (function() {
         `;
         sandbox.appendChild(styleReset);
 
-        // 3. 複製頁尾 (僅在一般模式)
+        // 4. 複製頁尾 (僅在一般模式) -> 放入 Wrapper
+        // 這樣頁尾會緊跟著內容，而不是被推到最底
         if (currentCampaign === 'default' && footer) {
             const footerClone = footer.cloneNode(true);
             Object.assign(footerClone.style, {
@@ -412,16 +427,19 @@ const app = (function() {
                 borderTop: "1px solid #444", 
                 padding: "20px 0", 
                 marginTop: "20px",
-                // 內部排版用 Flex，但它本身是個區塊
                 display: "flex", 
                 justifyContent: "center",
                 alignItems: "center",
                 gap: "20px"
             });
-            sandbox.appendChild(footerClone);
+            contentWrapper.appendChild(footerClone);
         }
 
-        // 4. 新增浮水印
+        // 將 Wrapper 加入 Sandbox
+        sandbox.appendChild(contentWrapper);
+
+        // 5. 新增浮水印 (Watermark)
+        // 因為上面的 Wrapper 設為 flex: 1，浮水印會被自然推到容器的最底部
         const watermark = document.createElement("div");
         watermark.innerHTML = `
             <span style="opacity: 0.6;">Created by</span> 
@@ -439,10 +457,7 @@ const app = (function() {
             borderTop: "1px solid #333",
             backgroundColor: "#16213e",
             boxSizing: "border-box",
-            marginTop: "20px",
-            // ★ 確保它是一個獨立區塊，並清除上方可能的浮動影響
-            display: "block",
-            clear: "both" 
+            flexShrink: "0" // ★ 防止浮水印被擠壓
         });
         sandbox.appendChild(watermark);
 
@@ -562,6 +577,7 @@ const app = (function() {
     };
 
 })();
+
 
 
 
