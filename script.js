@@ -467,7 +467,7 @@ const app = (function() {
             <span style="opacity: 0.6;">Created by</span> 
             <span style="color: #e94560; font-weight: bold;">FGO Servant Checker</span> 
             <span style="margin: 0 10px; color: #444;">|</span> 
-            mgneko.github.io
+            mgneko.github.io/fgo-servant-checker
         `;
         Object.assign(watermark.style, {
             width: "100%",
@@ -596,3 +596,4 @@ const app = (function() {
     };
 
 })();
+
