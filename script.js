@@ -36,13 +36,12 @@ const app = (function() {
         beast: '8e0000', unbeast: '37474f', shielder: '7e57c2'
     };
 
-    // ★ 活動/福袋設定 (Campaigns)
+    // 活動/福袋設定
     const campaigns = {
         'default': {
             name: '一般檢視 (依職階)',
             type: 'class'
         },
-        // --- 範例 1：混合職階 (三騎士 vs 四騎士) ---
         'gssr_mixed': {
             name: '【福袋】三騎士 vs 四騎士 (混合)',
             type: 'custom',
@@ -52,7 +51,6 @@ const app = (function() {
                 'EXTRA 職階': [...servents['ruler'], ...servents['avenger'], ...servents['alterego'], ...servents['foreigner'], ...servents['mooncancer'], ...servents['pretender'], ...servents['beast']]
             }
         },
-        // --- 範例 2：年份分組 ---
         'gssr_year': {
             name: '【福袋】依照年份區分',
             type: 'custom',
@@ -62,7 +60,6 @@ const app = (function() {
                 '2021 ~ 2024 (近期)': [316, 353, 377, 417, 431, 444, 459]
             }
         },
-        // --- 範例 3：特定角色 Pick Up ---
         'gssr_pickup': {
             name: '【特選】輔助角色 Pick Up',
             type: 'custom',
@@ -188,7 +185,7 @@ const app = (function() {
         const campaignConfig = campaigns[currentCampaign] || campaigns['default'];
         const isCustomCampaign = campaignConfig.type === 'custom';
 
-        // ★ 修正：顯示時設為空字串，讓它回復原本 CSS 的 display 屬性 (flex)
+        // 頁尾控制：福袋模式隱藏，一般模式顯示 (回復為空字串以遵循 CSS flex 設定)
         if (footer) {
             footer.style.display = isCustomCampaign ? 'none' : '';
         }
@@ -197,7 +194,6 @@ const app = (function() {
         let orderToRender = [];
 
         if (!isCustomCampaign) {
-            // 一般模式
             let visibleList = servantsData;
             if (currentServer === 'TW') {
                 visibleList = servantsData.filter(s => !s.isFuture);
@@ -205,7 +201,6 @@ const app = (function() {
             groupsToRender = groupBy(visibleList, 'class');
             orderToRender = defaultClassOrder;
         } else {
-            // 福袋模式
             Object.keys(campaignConfig.groups).forEach(poolName => {
                 const ids = campaignConfig.groups[poolName];
                 const poolServants = ids.map(id => servantsData.find(s => s.id === id)).filter(s => s);
@@ -232,7 +227,6 @@ const app = (function() {
             } else {
                 headerHtml = `<div class="class-header"><h3 style="color:#ffd700; margin:0; font-size:1.1rem; border-left:4px solid #e94560; padding-left:10px;">${groupKey}</h3></div>`;
 
-                // 期望值計算
                 const total = list.length;
                 const newCount = list.filter(s => !userState.owned[s.id]).length;
                 const newRate = total > 0 ? ((newCount / total) * 100).toFixed(1) : 0;
@@ -276,7 +270,6 @@ const app = (function() {
             list.forEach(servant => grid.appendChild(createCard(servant)));
         });
         
-        // 僅在一般模式更新全域統計 (雖然福袋模式隱藏了footer，但更新數據無妨)
         updateStats();
     }
 
@@ -297,6 +290,7 @@ const app = (function() {
         return div;
     }
 
+    // ★ 關鍵修改：handleInteraction 支援右鍵反向循環
     function handleInteraction(id, clickType) {
         if (currentMode === 'edit_np') {
             let currentNp = userState.owned[id] || 0;
@@ -305,9 +299,18 @@ const app = (function() {
             if (currentNp === 0) delete userState.owned[id]; else userState.owned[id] = currentNp;
         } else if (currentMode === 'edit_mark') {
             const currentMark = userState.marks[id];
-            if (!currentMark) userState.marks[id] = 'wanted';
-            else if (currentMark === 'wanted') userState.marks[id] = 'blocked';
-            else delete userState.marks[id];
+            
+            if (clickType === 'left') {
+                // 左鍵 (正向): 無 -> 想要 -> 封鎖 -> 無
+                if (!currentMark) userState.marks[id] = 'wanted';
+                else if (currentMark === 'wanted') userState.marks[id] = 'blocked';
+                else delete userState.marks[id];
+            } else if (clickType === 'right') {
+                // 右鍵 (反向): 無 -> 封鎖 -> 想要 -> 無
+                if (!currentMark) userState.marks[id] = 'blocked';
+                else if (currentMark === 'blocked') userState.marks[id] = 'wanted';
+                else delete userState.marks[id];
+            }
         }
         saveData();
         render();
@@ -385,14 +388,12 @@ const app = (function() {
         `;
         sandbox.appendChild(styleReset);
 
-        // ★ 修改：只有在「一般模式」下才複製頁尾
-        // currentCampaign === 'default' 時 footer 才會顯示，因此這裡只要判斷是否為 default
         if (currentCampaign === 'default' && footer) {
             const footerClone = footer.cloneNode(true);
             Object.assign(footerClone.style, {
                 position: "static", width: "100%", transform: "none", backgroundColor: "#16213e",
                 borderTop: "1px solid #444", padding: "20px 0", textAlign: "center", marginTop: "20px",
-                display: "block" // 強制顯示 (因為原本可能是 none)
+                display: "block"
             });
             sandbox.appendChild(footerClone);
         }
@@ -513,4 +514,3 @@ const app = (function() {
     };
 
 })();
-
