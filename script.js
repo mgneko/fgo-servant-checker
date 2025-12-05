@@ -360,26 +360,29 @@ const app = (function() {
         document.getElementById('stat-np').innerText = totalNp;
     }
 
-    // ==========================================
-    // 5. 截圖功能 (Screenshot)
+// ==========================================
+    // 5. 截圖功能 (Screenshot - v8.4 Watermark)
     // ==========================================
     function generateImage() {
         const original = document.getElementById("capture-area");
-        const footer = document.querySelector("footer");
+        // const footer = document.querySelector("footer"); // 舊的 footer 邏輯可以移除或保留
         const currentScrollY = window.scrollY;
         
         const btn = document.getElementById('btn-screenshot');
         const originalBtnText = btn ? btn.innerText : "截圖";
         if(btn) { btn.innerText = "處理中..."; btn.disabled = true; }
 
+        // 1. 建立沙盒
         const sandbox = document.createElement("div");
         Object.assign(sandbox.style, {
             position: "absolute", top: "0", left: "0", width: "1280px",
             backgroundColor: "#1a1a2e", zIndex: "-9999", margin: "0", padding: "0", overflow: "visible"
         });
 
+        // 2. 複製主要內容
         sandbox.appendChild(original.cloneNode(true));
 
+        // 強制 CSS (包含統計區塊修正)
         const styleReset = document.createElement("style");
         styleReset.innerHTML = `
             .servant-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; gap: 8px !important; }
@@ -388,24 +391,43 @@ const app = (function() {
         `;
         sandbox.appendChild(styleReset);
 
-        if (currentCampaign === 'default' && footer) {
-            const footerClone = footer.cloneNode(true);
-            Object.assign(footerClone.style, {
-                position: "static", width: "100%", transform: "none", backgroundColor: "#16213e",
-                borderTop: "1px solid #444", padding: "20px 0", textAlign: "center", marginTop: "20px",
-                display: "block"
-            });
-            sandbox.appendChild(footerClone);
-        }
+        // ★★★ 新增：動態浮水印區塊 ★★★
+        const watermark = document.createElement("div");
+        
+        // 設定浮水印文字 (支援 HTML，可放 icon 或 span)
+        // 建議格式：專案名稱 | 網址
+        watermark.innerHTML = `
+            <span style="opacity: 0.6;">Created by</span> 
+            <span style="color: #e94560; font-weight: bold;">FGO Servant Checker</span> 
+            <span style="margin: 0 10px; color: #444;">|</span> 
+            mgneko.github.io/fgo-servant-checker
+        `;
+
+        // 設定浮水印樣式 (低調風格)
+        Object.assign(watermark.style, {
+            width: "100%",
+            padding: "15px 40px",      // 上下留白
+            textAlign: "right",        // 靠右對齊，像簽名一樣
+            color: "#666",             // 低調的灰色文字
+            fontSize: "14px",          // 字體大小
+            fontFamily: "'Segoe UI', Roboto, sans-serif",
+            borderTop: "1px solid #333", // 上方分隔線
+            backgroundColor: "#16213e",  // 比背景稍亮的深藍色，形成區塊感
+            boxSizing: "border-box",
+            marginTop: "20px"          // 與上方內容保持距離
+        });
+        
+        sandbox.appendChild(watermark);
+        // ★★★ 結束 ★★★
 
         document.documentElement.appendChild(sandbox);
 
         setTimeout(() => {
-            const fullHeight = sandbox.scrollHeight + 50;
+            const fullHeight = sandbox.scrollHeight; // 不需要額外 +50 了，因為 watermark 本身有 padding
             window.scrollTo(0, 0);
 
             html2canvas(sandbox, {
-                scale: 1.0, 
+                scale: 0.6, 
                 useCORS: true,
                 backgroundColor: "#1a1a2e",
                 width: 1280, height: fullHeight, 
@@ -514,3 +536,4 @@ const app = (function() {
     };
 
 })();
+
