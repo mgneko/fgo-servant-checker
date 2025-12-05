@@ -182,15 +182,15 @@ const app = (function() {
     // ==========================================
     function render() {
         const appEl = document.getElementById('capture-area');
-        const footer = document.querySelector('footer'); // 獲取 footer 元素
+        const footer = document.querySelector('footer'); 
         appEl.innerHTML = ''; 
         
         const campaignConfig = campaigns[currentCampaign] || campaigns['default'];
         const isCustomCampaign = campaignConfig.type === 'custom';
 
-        // ★ 修改：如果是福袋模式，隱藏 Footer；一般模式則顯示
+        // ★ 修正：顯示時設為空字串，讓它回復原本 CSS 的 display 屬性 (flex)
         if (footer) {
-            footer.style.display = isCustomCampaign ? 'none' : 'block';
+            footer.style.display = isCustomCampaign ? 'none' : '';
         }
 
         let groupsToRender = {};
@@ -513,3 +513,4 @@ const app = (function() {
     };
 
 })();
+
