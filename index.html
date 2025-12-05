@@ -20,7 +20,7 @@
             <button onclick="app.exportSave()">匯出</button>
             <label for="input-save-file" class="file-btn">匯入</label>
             <input type="file" id="input-save-file" accept=".json" onchange="app.importSave(this)">
-            <button onclick="app.generateImage()" style="background:#00695c; color:white; border:none;">截圖</button>
+            <button id="btn-screenshot" onclick="app.generateImage()" style="background:#00695c; color:white; border:none;">截圖</button>
         </div>
         
         <div class="btn-group">
@@ -47,4 +47,5 @@
 
 <script src="script.js"></script>
 </body>
+
 </html>
