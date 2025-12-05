@@ -22,14 +22,12 @@ const app = (function() {
         'shielder': []
     };
 
-    // 台版開放進度 (對應 Array Index)
     const twReleaseLimit = {
         'saber': 19, 'archer': 15, 'lancer': 14, 'rider': 18, 'caster': 15, 'assassin': 13, 'berserker': 15,
         'ruler': 12, 'avenger': 8, 'alterego': 10, 'foreigner': 10, 'mooncancer': 4, 'pretender': 2,
         'beast': 1, 'unbeast': 0, 'shielder': 0
     };
 
-    // 職階顏色定義
     const classColors = {
         saber: '1a237e', archer: 'b71c1c', lancer: '1b5e20', rider: 'f57f17', 
         caster: '4a148c', assassin: '212121', berserker: '880e4f', 
@@ -42,28 +40,45 @@ const app = (function() {
     const campaigns = {
         'default': {
             name: '一般檢視 (依職階)',
-            type: 'class'
+            type: 'class' // 標記為 class 類型，不顯示期望值儀表板
         },
-        // 範例：您可以根據遊戲公告新增 (ID 需對應 servents 中的 ID)
-        'gssr_example': {
-            name: '【範例】職階分組福袋',
+        // --- 範例 1：混合職階 (三騎士 vs 四騎士) ---
+        'gssr_mixed': {
+            name: '【福袋】三騎士 vs 四騎士 (混合)',
             type: 'custom',
             groups: {
-                '三騎士 (劍弓槍)': [...servents['saber'], ...servents['archer'], ...servents['lancer']],
-                '四騎士 (騎術殺狂)': [...servents['rider'], ...servents['caster'], ...servents['assassin'], ...servents['berserker']],
-                'EX 職階': [...servents['ruler'], ...servents['avenger'], ...servents['alterego'], ...servents['foreigner'], ...servents['mooncancer'], ...servents['pretender']]
+                '三騎士 (劍/弓/槍)': [...servents['saber'], ...servents['archer'], ...servents['lancer']],
+                '四騎士 (騎/術/殺/狂)': [...servents['rider'], ...servents['caster'], ...servents['assassin'], ...servents['berserker']],
+                'EXTRA 職階': [...servents['ruler'], ...servents['avenger'], ...servents['alterego'], ...servents['foreigner'], ...servents['mooncancer'], ...servents['pretender'], ...servents['beast']]
+            }
+        },
+        // --- 範例 2：年份分組 (模擬 ID 範圍) ---
+        'gssr_year': {
+            name: '【福袋】依照年份區分',
+            type: 'custom',
+            groups: {
+                '2015 ~ 2017 (初期)': [2, 8, 12, 37, 60, 65, 70, 75, 96], // 僅為範例 ID
+                '2018 ~ 2020 (中期)': [196, 198, 201, 212, 224, 237, 268],
+                '2021 ~ 2024 (近期)': [316, 353, 377, 417, 431, 444, 459]
+            }
+        },
+        // --- 範例 3：特定角色 Pick Up ---
+        'gssr_pickup': {
+            name: '【特選】輔助角色 Pick Up',
+            type: 'custom',
+            groups: {
+                '人權輔助 (必抽)': [37, 62, 113, 237, 284, 307, 327, 316], // 諸葛孔明, 玉藻前, 梅林, 術師匠, 術傻, 鶴小姐, 殺狐, 奧伯龍 (對應 ID 需確認)
+                '高難對策': [150, 169, 215]
             }
         }
     };
 
-    // 預設職階順序
     const defaultClassOrder = [
         'saber', 'archer', 'lancer', 'rider', 'caster', 'assassin', 'berserker', 
         'ruler', 'avenger', 'alterego', 'foreigner', 'mooncancer', 'pretender',
         'beast', 'unbeast', 'shielder'
     ];
 
-    // 圖示產生邏輯
     const classIcons = {};
     defaultClassOrder.forEach(cls => {
         const letter = cls.charAt(0).toUpperCase();
@@ -73,7 +88,7 @@ const app = (function() {
     // ==========================================
     // 2. 應用程式狀態 (State Management)
     // ==========================================
-    let servantsData = []; // 扁平化資料索引
+    let servantsData = [];
     let userState = { owned: {}, marks: {} };
     let currentMode = 'edit_np'; 
     let currentServer = 'JP';
@@ -81,7 +96,6 @@ const app = (function() {
 
     const STORAGE_KEY = 'fgo_checker_data_v1';
 
-    // 讀取存檔
     function loadData() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -91,7 +105,6 @@ const app = (function() {
                 if (parsed.marks) userState.marks = parsed.marks;
                 if (parsed.server) {
                     currentServer = parsed.server;
-                    // 延遲更新 UI
                     setTimeout(() => updateServerUI(), 0);
                 }
             } catch (e) {
@@ -100,7 +113,6 @@ const app = (function() {
         }
     }
 
-    // 儲存存檔
     function saveData() {
         const dataToSave = {
             owned: userState.owned,
@@ -120,7 +132,6 @@ const app = (function() {
         }
     }
 
-    // 初始化資料與 UI
     function initData() {
         servantsData = [];
         for (const [cls, ids] of Object.entries(servents)) {
@@ -138,19 +149,14 @@ const app = (function() {
             }
         }
         
-        // 初始化活動選單
         initCampaignSelect();
-        
-        // 讀取存檔
         loadData();
-        
-        // 強制初次渲染
         render();
     }
 
     function initCampaignSelect() {
         const select = document.getElementById('campaign-select');
-        if (!select) return; // 若 HTML 沒有這個 select 則跳過
+        if (!select) return;
         select.innerHTML = '';
         Object.keys(campaigns).forEach(key => {
             const option = document.createElement('option');
@@ -181,7 +187,6 @@ const app = (function() {
         const campaignConfig = campaigns[currentCampaign] || campaigns['default'];
         const isCustomCampaign = campaignConfig.type === 'custom';
 
-        // 準備要渲染的群組
         let groupsToRender = {};
         let orderToRender = [];
 
@@ -194,19 +199,10 @@ const app = (function() {
             groupsToRender = groupBy(visibleList, 'class');
             orderToRender = defaultClassOrder;
         } else {
-            // 福袋模式 (依設定檔)
+            // 福袋模式
             Object.keys(campaignConfig.groups).forEach(poolName => {
                 const ids = campaignConfig.groups[poolName];
-                // 從總表反查 ID 取得角色物件，並過濾掉 undefined
                 const poolServants = ids.map(id => servantsData.find(s => s.id === id)).filter(s => s);
-                
-                // 若需在福袋中也隱藏未實裝角色，請打開下方註解
-                /*
-                if (currentServer === 'TW') {
-                    poolServants = poolServants.filter(s => !s.isFuture);
-                }
-                */
-
                 if (poolServants.length > 0) {
                     groupsToRender[poolName] = poolServants;
                     orderToRender.push(poolName);
@@ -214,7 +210,6 @@ const app = (function() {
             });
         }
 
-        // 開始繪製區塊
         orderToRender.forEach(groupKey => {
             const list = groupsToRender[groupKey];
             if (!list || list.length === 0) return;
@@ -222,45 +217,49 @@ const app = (function() {
             const section = document.createElement('section');
             section.className = 'class-section';
             
-            // 標題 HTML
             let headerHtml = '';
+            let statsHtml = ''; // 預設為空 (一般模式不顯示)
+
             if (!isCustomCampaign) {
+                // 一般模式標題
                 const iconUrl = classIcons[groupKey] || classIcons['saber'];
                 headerHtml = `<div class="class-header"><img src="${iconUrl}" class="class-icon-img" alt="${groupKey}"></div>`;
             } else {
+                // 福袋模式標題 + 機率儀表板
                 headerHtml = `<div class="class-header"><h3 style="color:#ffd700; margin:0; font-size:1.1rem; border-left:4px solid #e94560; padding-left:10px;">${groupKey}</h3></div>`;
+
+                // ★ 期望值計算 (僅在福袋模式顯示)
+                const total = list.length;
+                const newCount = list.filter(s => !userState.owned[s.id]).length;
+                const newRate = total > 0 ? ((newCount / total) * 100).toFixed(1) : 0;
+                
+                const wantedCount = list.filter(s => userState.marks[s.id] === 'wanted').length;
+                const wantedRate = total > 0 ? ((wantedCount / total) * 100).toFixed(1) : 0;
+
+                const np5Count = list.filter(s => userState.owned[s.id] >= 5).length;
+                const np5Rate = total > 0 ? ((np5Count / total) * 100).toFixed(1) : 0;
+
+                // ★ 儀表板文字已更新
+                statsHtml = `
+                    <div class="pool-stats">
+                        <div class="stat-item type-new">
+                            <span class="stat-label">未召喚</span>
+                            <span class="stat-value">${newRate}%</span>
+                            <span class="stat-count">${newCount}/${total}</span>
+                        </div>
+                        <div class="stat-item type-wanted">
+                            <span class="stat-label">私心清單</span>
+                            <span class="stat-value">${wantedRate}%</span>
+                            <span class="stat-count">${wantedCount}/${total}</span>
+                        </div>
+                        <div class="stat-item type-np5">
+                            <span class="stat-label">無記名靈基</span>
+                            <span class="stat-value">${np5Rate}%</span>
+                            <span class="stat-count">${np5Count}/${total}</span>
+                        </div>
+                    </div>
+                `;
             }
-
-            // ★ 機率期望值儀表板 (Dashboard)
-            const total = list.length;
-            const newCount = list.filter(s => !userState.owned[s.id]).length;
-            const newRate = total > 0 ? ((newCount / total) * 100).toFixed(1) : 0;
-            
-            const wantedCount = list.filter(s => userState.marks[s.id] === 'wanted').length;
-            const wantedRate = total > 0 ? ((wantedCount / total) * 100).toFixed(1) : 0;
-
-            const np5Count = list.filter(s => userState.owned[s.id] >= 5).length;
-            const np5Rate = total > 0 ? ((np5Count / total) * 100).toFixed(1) : 0;
-
-            const statsHtml = `
-                <div class="pool-stats">
-                    <div class="stat-item type-new">
-                        <span class="stat-label">New (未召喚)</span>
-                        <span class="stat-value">${newRate}%</span>
-                        <span class="stat-count">${newCount}/${total}</span>
-                    </div>
-                    <div class="stat-item type-wanted">
-                        <span class="stat-label">Jackpot (想要)</span>
-                        <span class="stat-value">${wantedRate}%</span>
-                        <span class="stat-count">${wantedCount}/${total}</span>
-                    </div>
-                    <div class="stat-item type-np5">
-                        <span class="stat-label">Bomb (已滿寶)</span>
-                        <span class="stat-value">${np5Rate}%</span>
-                        <span class="stat-count">${np5Count}/${total}</span>
-                    </div>
-                </div>
-            `;
 
             section.innerHTML = `
                 ${headerHtml}
@@ -306,7 +305,7 @@ const app = (function() {
             else if (currentMark === 'wanted') userState.marks[id] = 'blocked';
             else delete userState.marks[id];
         }
-        saveData(); // 操作即存檔
+        saveData();
         render();
     }
 
@@ -333,14 +332,6 @@ const app = (function() {
     }
 
     function updateStats() {
-        // 計算全域持有統計 (不管目前顯示什麼活動，全域統計通常針對整個 Box)
-        // 這裡我們統計「目前可視範圍內」的總合，這樣在福袋模式下可以看到該次福袋的總期望值
-        // 如果要統計全迦勒底，則遍歷 servantsData
-        
-        let visibleList = [];
-        const appEl = document.getElementById('capture-area');
-        // 簡單方式：根據 servantsData 統計 (但需過濾台日)
-        
         let ownedCount = 0; 
         let totalNp = 0;
         let totalCount = 0;
@@ -374,27 +365,22 @@ const app = (function() {
         const originalBtnText = btn ? btn.innerText : "截圖";
         if(btn) { btn.innerText = "處理中..."; btn.disabled = true; }
 
-        // 1. 建立沙盒
         const sandbox = document.createElement("div");
         Object.assign(sandbox.style, {
             position: "absolute", top: "0", left: "0", width: "1280px",
             backgroundColor: "#1a1a2e", zIndex: "-9999", margin: "0", padding: "0", overflow: "visible"
         });
 
-        // 2. 複製內容
         sandbox.appendChild(original.cloneNode(true));
 
-        // 強制 CSS
         const styleReset = document.createElement("style");
         styleReset.innerHTML = `
             .servant-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; gap: 8px !important; }
             .np-level { font-size: 1rem !important; } 
-            /* 修正截圖中的統計字體 */
             .pool-stats { background: #222 !important; border: 1px solid #444 !important; }
         `;
         sandbox.appendChild(styleReset);
 
-        // 3. 複製頁尾
         const footerClone = footer.cloneNode(true);
         Object.assign(footerClone.style, {
             position: "static", width: "100%", transform: "none", backgroundColor: "#16213e",
@@ -409,7 +395,7 @@ const app = (function() {
             window.scrollTo(0, 0);
 
             html2canvas(sandbox, {
-                scale: 1.0, // 平衡畫質與效能
+                scale: 0.6, 
                 useCORS: true,
                 backgroundColor: "#1a1a2e",
                 width: 1280, height: fullHeight, 
