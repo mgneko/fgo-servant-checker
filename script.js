@@ -210,7 +210,7 @@ const app = (function() {
             window.scrollTo(0, 0);
 
             html2canvas(sandbox, {
-                scale: 0.3, 
+                scale: 0.7, 
                 useCORS: true,
                 backgroundColor: "#1a1a2e",
                 width: 1280, height: fullHeight, 
@@ -277,7 +277,7 @@ const app = (function() {
                     } else {
                         alert("請允許彈出視窗以查看截圖");
                     }
-                }, 'image/jpeg', 0.8);
+                }, 'image/jpeg', 1.0);
 
             }).catch(err => {
                 console.error(err);
@@ -342,4 +342,5 @@ const app = (function() {
     };
 
 })();
+
 
