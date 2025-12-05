@@ -50,6 +50,47 @@ const app = (function() {
     let currentMode = 'edit_np'; 
     let currentServer = 'JP';
 
+    // ★ LocalStorage 存取鍵名
+    const STORAGE_KEY = 'fgo_checker_data_v1';
+
+    // ★ 讀取本地資料
+    function loadData() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.owned) userState.owned = parsed.owned;
+                if (parsed.marks) userState.marks = parsed.marks;
+                // 還原伺服器設定
+                if (parsed.server) {
+                    currentServer = parsed.server;
+                    // 同步 UI 狀態
+                    setTimeout(() => {
+                        const btnTW = document.getElementById('btn-server-tw');
+                        const btnJP = document.getElementById('btn-server-jp');
+                        if (btnTW && btnJP) {
+                            btnTW.classList.remove('active');
+                            btnJP.classList.remove('active');
+                            document.getElementById(currentServer === 'TW' ? 'btn-server-tw' : 'btn-server-jp').classList.add('active');
+                        }
+                    }, 0);
+                }
+            } catch (e) {
+                console.error('讀取存檔失敗', e);
+            }
+        }
+    }
+
+    // ★ 儲存資料到本地
+    function saveData() {
+        const dataToSave = {
+            owned: userState.owned,
+            marks: userState.marks,
+            server: currentServer
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    }
+
     function initData() {
         servantsData = [];
         for (const [cls, ids] of Object.entries(servents)) {
@@ -66,9 +107,14 @@ const app = (function() {
                 });
             }
         }
+        // ★ 初始化時讀取存檔
+        loadData();
     }
 
     function detectLanguage() {
+        // 如果有存檔，優先使用存檔的 server 設定，跳過語言偵測
+        if (localStorage.getItem(STORAGE_KEY)) return;
+
         const lang = navigator.language || navigator.userLanguage;
         if (lang.includes('zh') || lang.includes('ZH')) {
             setServer('TW');
@@ -135,6 +181,8 @@ const app = (function() {
             else if (currentMark === 'wanted') userState.marks[id] = 'blocked';
             else delete userState.marks[id];
         }
+        // ★ 變動時儲存
+        saveData();
         render();
     }
 
@@ -151,6 +199,8 @@ const app = (function() {
         document.getElementById('btn-server-tw').classList.remove('active');
         document.getElementById('btn-server-jp').classList.remove('active');
         document.getElementById(server === 'TW' ? 'btn-server-tw' : 'btn-server-jp').classList.add('active');
+        // ★ 變動時儲存
+        saveData();
         render();
     }
 
@@ -166,7 +216,7 @@ const app = (function() {
         document.getElementById('stat-np').innerText = totalNp;
     }
 
-    // ========= 截圖邏輯 V6.2 (修正 PC 預覽頁面遮蔽問題) =========
+    // ========= 截圖邏輯 V7.0 (修正截斷與存檔問題) =========
     function generateImage() {
         const original = document.getElementById("capture-area");
         const footer = document.querySelector("footer");
@@ -206,11 +256,12 @@ const app = (function() {
 
         // 4. 等待排版並截圖
         setTimeout(() => {
-            const fullHeight = sandbox.scrollHeight;
+            // ★ 修正：增加 50px 緩衝高度，確保最下方不被切掉
+            const fullHeight = sandbox.scrollHeight + 50;
             window.scrollTo(0, 0);
 
             html2canvas(sandbox, {
-                scale: 1.0, 
+                scale: 1.0, // 使用 1.0 以保持清晰度 (您提到的需求)
                 useCORS: true,
                 backgroundColor: "#1a1a2e",
                 width: 1280, height: fullHeight, 
@@ -235,24 +286,26 @@ const app = (function() {
                                     <title>FGO Snapshot</title>
                                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                                     <style>
-                                        /* ★ 修正重點：改為傳統 Block 排版，移除 flex，並加入 padding-bottom */
                                         body { 
                                             margin: 0; 
                                             background: #111; 
                                             text-align: center; 
                                             padding: 20px; 
-                                            padding-bottom: 80px; /* 確保底部按鈕不會被視窗切掉 */
+                                            box-sizing: border-box; /* 確保 padding 不會導致內容溢出 */
                                         }
                                         img { 
                                             width: 100%; 
                                             max-width: 1280px; 
                                             height: auto; 
-                                            display: inline-block; /* 配合 text-align center */
+                                            display: inline-block; 
                                             box-shadow: 0 0 10px #000; 
+                                        }
+                                        .dl-container {
+                                            margin-top: 25px;
+                                            margin-bottom: 50px; /* 增加底部空間 */
                                         }
                                         .dl-btn { 
                                             display: inline-block;
-                                            margin-top: 25px; 
                                             padding: 12px 25px; 
                                             background: #e94560; 
                                             color: white; 
@@ -264,12 +317,16 @@ const app = (function() {
                                             cursor: pointer;
                                         }
                                         .dl-btn:hover { background: #ff6b81; }
+                                        /* 隱形墊片，確保捲軸能拉到最底 */
+                                        .spacer { height: 50px; }
                                     </style>
                                 </head>
                                 <body>
                                     <img src="${url}" alt="FGO Checklist">
-                                    <br>
-                                    <a href="${url}" download="fgo_checklist.jpg" class="dl-btn">下載圖片</a>
+                                    <div class="dl-container">
+                                        <a href="${url}" download="fgo_checklist.jpg" class="dl-btn">下載圖片</a>
+                                    </div>
+                                    <div class="spacer"></div>
                                 </body>
                             </html>
                         `);
@@ -277,7 +334,7 @@ const app = (function() {
                     } else {
                         alert("請允許彈出視窗以查看截圖");
                     }
-                }, 'image/jpeg', 1.0);
+                }, 'image/jpeg', 1.0); // 使用 JPEG, 品質 1.0
 
             }).catch(err => {
                 console.error(err);
@@ -319,6 +376,8 @@ const app = (function() {
                 }
                 if (!userState.owned) userState.owned = {};
                 if (!userState.marks) userState.marks = {};
+                // ★ 匯入時也儲存到本地
+                saveData();
                 render();
             } catch(err) { alert('讀取失敗'); }
             input.value = '';
@@ -327,7 +386,12 @@ const app = (function() {
     }
 
     function clearAll() {
-        if(confirm('確定要清空？')) { userState = { owned: {}, marks: {} }; render(); }
+        if(confirm('確定要清空？')) { 
+            userState = { owned: {}, marks: {} }; 
+            // ★ 清空時也儲存(等於清空本地資料)
+            saveData();
+            render(); 
+        }
     }
 
     function groupBy(xs, key) {
@@ -342,6 +406,3 @@ const app = (function() {
     };
 
 })();
-
-
-
