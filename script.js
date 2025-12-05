@@ -360,8 +360,8 @@ const app = (function() {
         document.getElementById('stat-np').innerText = totalNp;
     }
 
-    // ==========================================
-    // 5. 截圖功能 (Screenshot - v8.7 Flex Layout Fix)
+// ==========================================
+    // 5. 截圖功能 (Screenshot - v8.8 Stable Fix)
     // ==========================================
     function generateImage() {
         const original = document.getElementById("capture-area");
@@ -373,26 +373,29 @@ const app = (function() {
         if(btn) { btn.innerText = "處理中..."; btn.disabled = true; }
 
         // 1. 建立沙盒
+        // ★ 回歸 display: block (預設)，避免 Flex 導致內部 Grid 寬度計算錯誤
         const sandbox = document.createElement("div");
         Object.assign(sandbox.style, {
             position: "absolute", top: "0", left: "0", width: "1280px",
             backgroundColor: "#1a1a2e", zIndex: "-9999", margin: "0", padding: "0", overflow: "visible",
-            // ★★★ 關鍵修正：強制使用 Flex Column 排版 ★★★
-            // 這確保了 [內容] -> [頁尾] -> [浮水印] 絕對是垂直依序排列，不會重疊
-            display: "flex",
-            flexDirection: "column"
+            display: "block" 
         });
 
         // 2. 複製主要內容
         const contentClone = original.cloneNode(true);
-        // 確保內容區塊不會被壓縮
-        contentClone.style.flex = "0 0 auto"; 
         sandbox.appendChild(contentClone);
 
         // 強制 CSS
+        // 這裡確保 Grid 能夠吃滿 1280px 的寬度
         const styleReset = document.createElement("style");
         styleReset.innerHTML = `
-            .servant-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; gap: 8px !important; }
+            .servant-grid { 
+                display: grid !important; 
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; 
+                gap: 8px !important; 
+                width: 100% !important; /* 強制寬度 */
+                box-sizing: border-box !important;
+            }
             .np-level { font-size: 1rem !important; } 
             .pool-stats { background: #222 !important; border: 1px solid #444 !important; }
         `;
@@ -409,11 +412,11 @@ const app = (function() {
                 borderTop: "1px solid #444", 
                 padding: "20px 0", 
                 marginTop: "20px",
+                // 內部排版用 Flex，但它本身是個區塊
                 display: "flex", 
                 justifyContent: "center",
                 alignItems: "center",
-                gap: "20px",
-                flex: "0 0 auto" // 防止變形
+                gap: "20px"
             });
             sandbox.appendChild(footerClone);
         }
@@ -436,8 +439,10 @@ const app = (function() {
             borderTop: "1px solid #333",
             backgroundColor: "#16213e",
             boxSizing: "border-box",
-            marginTop: "20px", // 確保與上方內容有間距
-            flex: "0 0 auto"   // 防止變形
+            marginTop: "20px",
+            // ★ 確保它是一個獨立區塊，並清除上方可能的浮動影響
+            display: "block",
+            clear: "both" 
         });
         sandbox.appendChild(watermark);
 
@@ -557,6 +562,7 @@ const app = (function() {
     };
 
 })();
+
 
 
 
