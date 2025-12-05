@@ -360,8 +360,8 @@ const app = (function() {
         document.getElementById('stat-np').innerText = totalNp;
     }
 
-// ==========================================
-    // 5. 截圖功能 (Screenshot - v8.6 Layout Fix)
+    // ==========================================
+    // 5. 截圖功能 (Screenshot - v8.7 Flex Layout Fix)
     // ==========================================
     function generateImage() {
         const original = document.getElementById("capture-area");
@@ -376,11 +376,18 @@ const app = (function() {
         const sandbox = document.createElement("div");
         Object.assign(sandbox.style, {
             position: "absolute", top: "0", left: "0", width: "1280px",
-            backgroundColor: "#1a1a2e", zIndex: "-9999", margin: "0", padding: "0", overflow: "visible"
+            backgroundColor: "#1a1a2e", zIndex: "-9999", margin: "0", padding: "0", overflow: "visible",
+            // ★★★ 關鍵修正：強制使用 Flex Column 排版 ★★★
+            // 這確保了 [內容] -> [頁尾] -> [浮水印] 絕對是垂直依序排列，不會重疊
+            display: "flex",
+            flexDirection: "column"
         });
 
         // 2. 複製主要內容
-        sandbox.appendChild(original.cloneNode(true));
+        const contentClone = original.cloneNode(true);
+        // 確保內容區塊不會被壓縮
+        contentClone.style.flex = "0 0 auto"; 
+        sandbox.appendChild(contentClone);
 
         // 強制 CSS
         const styleReset = document.createElement("style");
@@ -391,7 +398,7 @@ const app = (function() {
         `;
         sandbox.appendChild(styleReset);
 
-        // ★★★ 修正：頁尾複製時強制使用 Flex 佈局 ★★★
+        // 3. 複製頁尾 (僅在一般模式)
         if (currentCampaign === 'default' && footer) {
             const footerClone = footer.cloneNode(true);
             Object.assign(footerClone.style, {
@@ -402,16 +409,16 @@ const app = (function() {
                 borderTop: "1px solid #444", 
                 padding: "20px 0", 
                 marginTop: "20px",
-                // 關鍵修正：改回 flex 並置中
                 display: "flex", 
                 justifyContent: "center",
                 alignItems: "center",
-                gap: "20px" // 確保數據間有間距
+                gap: "20px",
+                flex: "0 0 auto" // 防止變形
             });
             sandbox.appendChild(footerClone);
         }
 
-        // 3. 新增浮水印
+        // 4. 新增浮水印
         const watermark = document.createElement("div");
         watermark.innerHTML = `
             <span style="opacity: 0.6;">Created by</span> 
@@ -429,7 +436,8 @@ const app = (function() {
             borderTop: "1px solid #333",
             backgroundColor: "#16213e",
             boxSizing: "border-box",
-            marginTop: "0px"
+            marginTop: "20px", // 確保與上方內容有間距
+            flex: "0 0 auto"   // 防止變形
         });
         sandbox.appendChild(watermark);
 
@@ -549,6 +557,7 @@ const app = (function() {
     };
 
 })();
+
 
 
 
