@@ -174,6 +174,73 @@ main {
     display: none; pointer-events: none;
 }
 
+/* --- 新增：機率統計儀表板樣式 --- */
+.pool-stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    flex-wrap: wrap; /* 手機版自動換行 */
+}
+
+.stat-item {
+    flex: 1;
+    min-width: 100px; /* 防止手機版擠成一團 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stat-value {
+    font-weight: bold;
+    font-size: 1.1rem;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.stat-count {
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
+/* 顏色定義 */
+/* New: 未擁有 - 青色 */
+.stat-item.type-new {
+    border-color: rgba(76, 201, 240, 0.3);
+    background: linear-gradient(to bottom, rgba(76, 201, 240, 0.05), transparent);
+}
+.stat-item.type-new .stat-value { color: #4cc9f0; }
+
+/* Wanted: 想要 - 粉色 */
+.stat-item.type-wanted {
+    border-color: rgba(247, 37, 133, 0.3);
+    background: linear-gradient(to bottom, rgba(247, 37, 133, 0.05), transparent);
+}
+.stat-item.type-wanted .stat-value { color: #f72585; }
+
+/* NP5: 寶具5 (地雷) - 灰色/暗紅警告 */
+.stat-item.type-np5 {
+    border-color: rgba(150, 150, 150, 0.3);
+    background: linear-gradient(to bottom, rgba(200, 200, 200, 0.05), transparent);
+}
+.stat-item.type-np5 .stat-value { color: #bbb; }
+
 /* 底部統計 */
 footer {
     position: fixed;
@@ -191,4 +258,5 @@ footer {
 }
 
 .stat-item { color: #ccc; }
+
 .stat-val { color: var(--gold); font-weight: bold; margin-left: 5px; }
