@@ -361,7 +361,7 @@ const app = (function() {
     }
 
     // ==========================================
-    // 5. 截圖功能 (Screenshot - v9.0 Auto Height)
+    // 5. 截圖功能 (Screenshot - v9.1 Remove Layout Spacing)
     // ==========================================
     function generateImage() {
         const original = document.getElementById("capture-area");
@@ -372,12 +372,12 @@ const app = (function() {
         const originalBtnText = btn ? btn.innerText : "截圖";
         if(btn) { btn.innerText = "處理中..."; btn.disabled = true; }
 
-        // 1. 建立沙盒 (Sandbox)
+        // 1. 建立沙盒
         const sandbox = document.createElement("div");
         Object.assign(sandbox.style, {
             position: "absolute", top: "0", left: "0", 
             width: "1280px",
-            // ★ 移除 minHeight，讓高度自動適應內容，消除下方大片空白
+            // minHeight: "0", // 確保沙盒自己沒有最小高度
             backgroundColor: "#1a1a2e", 
             zIndex: "-9999", 
             margin: "0", padding: "0", 
@@ -386,34 +386,46 @@ const app = (function() {
             flexDirection: "column"     
         });
 
-        // 2. 建立內容包裝層 (Content Wrapper)
+        // 2. 建立內容包裝層
         const contentWrapper = document.createElement("div");
         Object.assign(contentWrapper.style, {
-            // ★ 移除 flex: 1，不需要強制撐開空間，讓它自然長度即可
-            width: "100%",      // ★ 保持 100% 寬度以保護 Grid 排版
-            display: "block"    
+            width: "100%",      
+            display: "block",
+            flex: "0 0 auto" // ★ 關鍵：禁止它自動伸展
         });
 
         // 3. 複製主要內容 -> 放入 Wrapper
         const contentClone = original.cloneNode(true);
+        
+        // ★★★ 關鍵修正：強制移除繼承來的高度屬性 ★★★
+        // 這會解決因為 CSS 設定 min-height: 100vh 導致的巨大空白
+        contentClone.style.minHeight = "0";
+        contentClone.style.height = "auto";
+        contentClone.style.paddingBottom = "0"; // 移除可能的底部留白
+        contentClone.style.marginBottom = "0";  // 移除可能的底部邊距
+        
         contentWrapper.appendChild(contentClone);
 
-        // 強制 CSS (Grid 設定)
+        // 強制 CSS
         const styleReset = document.createElement("style");
         styleReset.innerHTML = `
+            /* 強制重置容器高度 */
+            #capture-area { min-height: 0 !important; height: auto !important; }
+            
             .servant-grid { 
                 display: grid !important; 
                 grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; 
                 gap: 8px !important; 
                 width: 100% !important; 
                 box-sizing: border-box !important;
+                padding-bottom: 20px !important; /* 只留一點點縫隙 */
             }
             .np-level { font-size: 1rem !important; } 
             .pool-stats { background: #222 !important; border: 1px solid #444 !important; }
         `;
         sandbox.appendChild(styleReset);
 
-        // 4. 複製頁尾 (僅在一般模式) -> 放入 Wrapper
+        // 4. 複製頁尾 (僅在一般模式)
         if (currentCampaign === 'default' && footer) {
             const footerClone = footer.cloneNode(true);
             Object.assign(footerClone.style, {
@@ -423,19 +435,19 @@ const app = (function() {
                 backgroundColor: "#16213e",
                 borderTop: "1px solid #444", 
                 padding: "20px 0", 
-                marginTop: "20px",
+                marginTop: "0", // 緊貼上方
                 display: "flex", 
                 justifyContent: "center",
                 alignItems: "center",
-                gap: "20px"
+                gap: "20px",
+                flex: "0 0 auto"
             });
             contentWrapper.appendChild(footerClone);
         }
 
-        // 將 Wrapper 加入 Sandbox
         sandbox.appendChild(contentWrapper);
 
-        // 5. 新增浮水印 (Watermark)
+        // 5. 新增浮水印
         const watermark = document.createElement("div");
         watermark.innerHTML = `
             <span style="opacity: 0.6;">Created by</span> 
@@ -453,8 +465,7 @@ const app = (function() {
             borderTop: "1px solid #333",
             backgroundColor: "#16213e",
             boxSizing: "border-box",
-            // 讓浮水印與上方內容保持 20px 的距離，不會黏在一起，也不會離太遠
-            marginTop: "20px",
+            marginTop: "0",    // 不再需要額外 margin，靠 grid 的 padding 即可
             flexShrink: "0" 
         });
         sandbox.appendChild(watermark);
@@ -575,6 +586,7 @@ const app = (function() {
     };
 
 })();
+
 
 
 
