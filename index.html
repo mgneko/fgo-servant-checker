@@ -17,6 +17,11 @@
         </div>
 
         <div class="btn-group">
+            <select id="campaign-select" onchange="app.switchCampaign(this.value)" style="padding: 5px; border-radius: 4px; background: #16213e; color: white; border: 1px solid #444;">
+                </select>
+        </div>
+
+        <div class="btn-group">
             <button onclick="app.exportSave()">匯出</button>
             <label for="input-save-file" class="file-btn">匯入</label>
             <input type="file" id="input-save-file" accept=".json" onchange="app.importSave(this)">
@@ -49,4 +54,5 @@
 </body>
 
 </html>
+
 
