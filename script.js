@@ -361,11 +361,11 @@ const app = (function() {
     }
 
 // ==========================================
-    // 5. 截圖功能 (Screenshot - v8.5 Fixed)
+    // 5. 截圖功能 (Screenshot - v8.6 Layout Fix)
     // ==========================================
     function generateImage() {
         const original = document.getElementById("capture-area");
-        const footer = document.querySelector("footer"); // 重新獲取 footer
+        const footer = document.querySelector("footer");
         const currentScrollY = window.scrollY;
         
         const btn = document.getElementById('btn-screenshot');
@@ -379,7 +379,7 @@ const app = (function() {
             backgroundColor: "#1a1a2e", zIndex: "-9999", margin: "0", padding: "0", overflow: "visible"
         });
 
-        // 2. 複製主要內容 (角色列表)
+        // 2. 複製主要內容
         sandbox.appendChild(original.cloneNode(true));
 
         // 強制 CSS
@@ -391,7 +391,7 @@ const app = (function() {
         `;
         sandbox.appendChild(styleReset);
 
-        // ★★★ 修正回歸：複製頁尾 (僅在一般模式顯示) ★★★
+        // ★★★ 修正：頁尾複製時強制使用 Flex 佈局 ★★★
         if (currentCampaign === 'default' && footer) {
             const footerClone = footer.cloneNode(true);
             Object.assign(footerClone.style, {
@@ -401,14 +401,17 @@ const app = (function() {
                 backgroundColor: "#16213e",
                 borderTop: "1px solid #444", 
                 padding: "20px 0", 
-                textAlign: "center", 
                 marginTop: "20px",
-                display: "block" // 強制顯示
+                // 關鍵修正：改回 flex 並置中
+                display: "flex", 
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "20px" // 確保數據間有間距
             });
             sandbox.appendChild(footerClone);
         }
 
-        // 3. 新增浮水印 (在頁尾之後)
+        // 3. 新增浮水印
         const watermark = document.createElement("div");
         watermark.innerHTML = `
             <span style="opacity: 0.6;">Created by</span> 
@@ -426,7 +429,7 @@ const app = (function() {
             borderTop: "1px solid #333",
             backgroundColor: "#16213e",
             boxSizing: "border-box",
-            marginTop: "0px" // 緊接在上方內容(或頁尾)之後
+            marginTop: "0px"
         });
         sandbox.appendChild(watermark);
 
@@ -546,5 +549,6 @@ const app = (function() {
     };
 
 })();
+
 
 
