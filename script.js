@@ -50,10 +50,8 @@ const app = (function() {
     let currentMode = 'edit_np'; 
     let currentServer = 'JP';
 
-    // ★ LocalStorage 存取鍵名
     const STORAGE_KEY = 'fgo_checker_data_v1';
 
-    // ★ 讀取本地資料
     function loadData() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -61,10 +59,9 @@ const app = (function() {
                 const parsed = JSON.parse(saved);
                 if (parsed.owned) userState.owned = parsed.owned;
                 if (parsed.marks) userState.marks = parsed.marks;
-                // 還原伺服器設定
                 if (parsed.server) {
                     currentServer = parsed.server;
-                    // 同步 UI 狀態
+                    // 同步 UI 按鈕狀態
                     setTimeout(() => {
                         const btnTW = document.getElementById('btn-server-tw');
                         const btnJP = document.getElementById('btn-server-jp');
@@ -81,7 +78,6 @@ const app = (function() {
         }
     }
 
-    // ★ 儲存資料到本地
     function saveData() {
         const dataToSave = {
             owned: userState.owned,
@@ -107,13 +103,16 @@ const app = (function() {
                 });
             }
         }
-        // ★ 初始化時讀取存檔
+        // 讀取存檔
         loadData();
+        
+        // ★ 關鍵修復：初始化完成後，強制渲染一次畫面
+        // 這樣即使有存檔跳過了 detectLanguage 的 setServer，畫面也能顯示
+        render();
     }
 
     function detectLanguage() {
-        // 如果有存檔，優先使用存檔的 server 設定，跳過語言偵測
-        if (localStorage.getItem(STORAGE_KEY)) return;
+        if (localStorage.getItem(STORAGE_KEY)) return; // 有存檔則不覆蓋
 
         const lang = navigator.language || navigator.userLanguage;
         if (lang.includes('zh') || lang.includes('ZH')) {
@@ -181,7 +180,6 @@ const app = (function() {
             else if (currentMark === 'wanted') userState.marks[id] = 'blocked';
             else delete userState.marks[id];
         }
-        // ★ 變動時儲存
         saveData();
         render();
     }
@@ -199,7 +197,6 @@ const app = (function() {
         document.getElementById('btn-server-tw').classList.remove('active');
         document.getElementById('btn-server-jp').classList.remove('active');
         document.getElementById(server === 'TW' ? 'btn-server-tw' : 'btn-server-jp').classList.add('active');
-        // ★ 變動時儲存
         saveData();
         render();
     }
@@ -216,7 +213,7 @@ const app = (function() {
         document.getElementById('stat-np').innerText = totalNp;
     }
 
-    // ========= 截圖邏輯 V7.0 (修正截斷與存檔問題) =========
+    // ========= 截圖邏輯 V7.0 (含文字截斷修復) =========
     function generateImage() {
         const original = document.getElementById("capture-area");
         const footer = document.querySelector("footer");
@@ -227,14 +224,12 @@ const app = (function() {
         btn.innerText = "產生截圖中...";
         btn.disabled = true;
 
-        // 1. 建立沙盒
         const sandbox = document.createElement("div");
         Object.assign(sandbox.style, {
             position: "absolute", top: "0", left: "0", width: "1280px",
             backgroundColor: "#1a1a2e", zIndex: "-9999", margin: "0", padding: "0", overflow: "visible"
         });
 
-        // 2. 複製內容
         sandbox.appendChild(original.cloneNode(true));
 
         const styleReset = document.createElement("style");
@@ -244,7 +239,6 @@ const app = (function() {
         `;
         sandbox.appendChild(styleReset);
 
-        // 3. 複製頁尾
         const footerClone = footer.cloneNode(true);
         Object.assign(footerClone.style, {
             position: "static", width: "100%", transform: "none", backgroundColor: "#16213e",
@@ -254,14 +248,13 @@ const app = (function() {
 
         document.documentElement.appendChild(sandbox);
 
-        // 4. 等待排版並截圖
         setTimeout(() => {
-            // ★ 修正：增加 50px 緩衝高度，確保最下方不被切掉
+            // ★ 確保高度包含緩衝
             const fullHeight = sandbox.scrollHeight + 50;
             window.scrollTo(0, 0);
 
             html2canvas(sandbox, {
-                scale: 1.0, // 使用 1.0 以保持清晰度 (您提到的需求)
+                scale: 1.0, 
                 useCORS: true,
                 backgroundColor: "#1a1a2e",
                 width: 1280, height: fullHeight, 
@@ -291,7 +284,7 @@ const app = (function() {
                                             background: #111; 
                                             text-align: center; 
                                             padding: 20px; 
-                                            box-sizing: border-box; /* 確保 padding 不會導致內容溢出 */
+                                            box-sizing: border-box; 
                                         }
                                         img { 
                                             width: 100%; 
@@ -302,7 +295,7 @@ const app = (function() {
                                         }
                                         .dl-container {
                                             margin-top: 25px;
-                                            margin-bottom: 50px; /* 增加底部空間 */
+                                            margin-bottom: 50px;
                                         }
                                         .dl-btn { 
                                             display: inline-block;
@@ -317,7 +310,6 @@ const app = (function() {
                                             cursor: pointer;
                                         }
                                         .dl-btn:hover { background: #ff6b81; }
-                                        /* 隱形墊片，確保捲軸能拉到最底 */
                                         .spacer { height: 50px; }
                                     </style>
                                 </head>
@@ -334,7 +326,7 @@ const app = (function() {
                     } else {
                         alert("請允許彈出視窗以查看截圖");
                     }
-                }, 'image/jpeg', 1.0); // 使用 JPEG, 品質 1.0
+                }, 'image/jpeg', 1.0);
 
             }).catch(err => {
                 console.error(err);
@@ -376,7 +368,6 @@ const app = (function() {
                 }
                 if (!userState.owned) userState.owned = {};
                 if (!userState.marks) userState.marks = {};
-                // ★ 匯入時也儲存到本地
                 saveData();
                 render();
             } catch(err) { alert('讀取失敗'); }
@@ -388,7 +379,6 @@ const app = (function() {
     function clearAll() {
         if(confirm('確定要清空？')) { 
             userState = { owned: {}, marks: {} }; 
-            // ★ 清空時也儲存(等於清空本地資料)
             saveData();
             render(); 
         }
