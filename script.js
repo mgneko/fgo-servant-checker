@@ -20,7 +20,6 @@ const app = (function() {
         'shielder': []
     };
 
-    // 台版開放數量限制
     const twReleaseLimit = {
         'saber': 19, 'archer': 15, 'lancer': 14, 'rider': 18, 'caster': 15, 'assassin': 13, 'berserker': 15,
         'ruler': 12, 'avenger': 8, 'alterego': 10, 'foreigner': 10, 'mooncancer': 4, 'pretender': 2,
@@ -44,7 +43,7 @@ const app = (function() {
     const classIcons = {};
     classOrder.forEach(cls => {
         const letter = cls.charAt(0).toUpperCase();
-        classIcons[cls] = `https://placehold.co/50x50/transparent/white?text=${letter}&font=roboto`;
+        classIcons[cls] = `images/class/${cls}.png`;
     });
 
     // --- 2. 應用程式狀態 ---
@@ -64,7 +63,7 @@ const app = (function() {
                         name: `No.${id}`, 
                         class: cls,
                         isFuture: index >= limit,
-                        img: `https://placehold.co/150x150/${classColors[cls] || '333'}/FFF?text=${id}&font=roboto`
+                        img: `images/servents/${id}.png`
                     });
                 });
             }
@@ -169,19 +168,18 @@ const app = (function() {
         document.getElementById('stat-np').innerText = totalNp;
     }
 
-    // ========= 截圖邏輯 V6.1 (效能優化、尺寸縮小、JPEG壓縮) =========
+    // ========= 截圖邏輯 V6.2 (修正 PC 預覽頁面遮蔽問題) =========
     function generateImage() {
         const original = document.getElementById("capture-area");
         const footer = document.querySelector("footer");
         const currentScrollY = window.scrollY;
         
-        // ★ 修正2: 明確獲取按鈕元素並修改狀態
         const btn = document.getElementById('btn-screenshot');
         const originalBtnText = btn.innerText;
         btn.innerText = "產生截圖中...";
-        btn.disabled = true; // 避免重複點擊
+        btn.disabled = true;
 
-        // 1. 建立沙盒 (強制 1280px)
+        // 1. 建立沙盒
         const sandbox = document.createElement("div");
         Object.assign(sandbox.style, {
             position: "absolute", top: "0", left: "0", width: "1280px",
@@ -191,7 +189,6 @@ const app = (function() {
         // 2. 複製內容
         sandbox.appendChild(original.cloneNode(true));
 
-        // 強制 Grid 樣式
         const styleReset = document.createElement("style");
         styleReset.innerHTML = `
             .servant-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; gap: 8px !important; }
@@ -215,9 +212,7 @@ const app = (function() {
             window.scrollTo(0, 0);
 
             html2canvas(sandbox, {
-                // ★ 修正1: 將 scale 降低至 0.7 (原尺寸的 70%)
-                // 這能顯著減少 PC 卡頓，並達成縮小 30% 的需求
-                scale: 0.7, 
+                scale: 0.3, 
                 useCORS: true,
                 backgroundColor: "#1a1a2e",
                 width: 1280, height: fullHeight, 
@@ -227,11 +222,9 @@ const app = (function() {
                 document.documentElement.removeChild(sandbox);
                 window.scrollTo(0, currentScrollY);
                 
-                // ★ 修正2: 還原按鈕狀態
                 btn.innerText = originalBtnText;
                 btn.disabled = false;
 
-                // ★ 修正3: 改用 image/jpeg 並設定品質 0.8，確保檔案 < 2MB
                 canvas.toBlob(function(blob) {
                     const url = URL.createObjectURL(blob);
                     const newWindow = window.open('about:blank', '_blank');
@@ -244,29 +237,54 @@ const app = (function() {
                                     <title>FGO Snapshot</title>
                                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                                     <style>
-                                        body { margin:0; background:#111; display:flex; flex-direction:column; align-items:center; min-height:100vh; }
-                                        img { width:100%; max-width:1280px; height:auto; display:block; box-shadow:0 0 10px #000; }
-                                        /* ★ 修正4: 移除提示文字樣式 */
-                                        .dl-btn { margin-top:20px; padding:10px 20px; background:#e94560; color:white; text-decoration:none; border-radius:5px; font-family:sans-serif; font-weight:bold; }
+                                        /* ★ 修正重點：改為傳統 Block 排版，移除 flex，並加入 padding-bottom */
+                                        body { 
+                                            margin: 0; 
+                                            background: #111; 
+                                            text-align: center; 
+                                            padding: 20px; 
+                                            padding-bottom: 80px; /* 確保底部按鈕不會被視窗切掉 */
+                                        }
+                                        img { 
+                                            width: 100%; 
+                                            max-width: 1280px; 
+                                            height: auto; 
+                                            display: inline-block; /* 配合 text-align center */
+                                            box-shadow: 0 0 10px #000; 
+                                        }
+                                        .dl-btn { 
+                                            display: inline-block;
+                                            margin-top: 25px; 
+                                            padding: 12px 25px; 
+                                            background: #e94560; 
+                                            color: white; 
+                                            text-decoration: none; 
+                                            border-radius: 5px; 
+                                            font-family: sans-serif; 
+                                            font-weight: bold; 
+                                            font-size: 16px;
+                                            cursor: pointer;
+                                        }
+                                        .dl-btn:hover { background: #ff6b81; }
                                     </style>
                                 </head>
                                 <body>
                                     <img src="${url}" alt="FGO Checklist">
+                                    <br>
                                     <a href="${url}" download="fgo_checklist.jpg" class="dl-btn">下載圖片</a>
-                                    </body>
+                                </body>
                             </html>
                         `);
                         newWindow.document.close();
                     } else {
                         alert("請允許彈出視窗以查看截圖");
                     }
-                }, 'image/jpeg', 0.8); // 使用 JPEG, 品質 80%
+                }, 'image/jpeg', 0.8);
 
             }).catch(err => {
                 console.error(err);
                 if(sandbox.parentNode) sandbox.parentNode.removeChild(sandbox);
                 window.scrollTo(0, currentScrollY);
-                // ★ 修正2: 發生錯誤也要還原按鈕
                 btn.innerText = originalBtnText;
                 btn.disabled = false;
                 alert("截圖失敗");
