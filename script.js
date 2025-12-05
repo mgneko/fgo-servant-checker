@@ -36,36 +36,57 @@ const app = (function() {
         beast: '8e0000', unbeast: '37474f', shielder: '7e57c2'
     };
 
-    // 活動/福袋設定
+    // ★ 更新：真實福袋資料
+    // 資料來源：FGO Wiki & Reddit
     const campaigns = {
         'default': {
             name: '一般檢視 (依職階)',
             type: 'class'
         },
-        'gssr_mixed': {
-            name: '【福袋】三騎士 vs 四騎士 (混合)',
+        
+        // --- 台版 2025 新年福袋 (對應日版 2023 新年) ---
+        // 特色：依「職階」+「寶具類型(單體/全體/輔助)」分類，共 20 池
+        'tw_2025_ny': {
+            name: '【台GO】2025 新年福袋 (預測)',
             type: 'custom',
             groups: {
-                '三騎士 (劍/弓/槍)': [...servents['saber'], ...servents['archer'], ...servents['lancer']],
-                '四騎士 (騎/術/殺/狂)': [...servents['rider'], ...servents['caster'], ...servents['assassin'], ...servents['berserker']],
-                'EXTRA 職階': [...servents['ruler'], ...servents['avenger'], ...servents['alterego'], ...servents['foreigner'], ...servents['mooncancer'], ...servents['pretender'], ...servents['beast']]
+                '劍職-單體寶具': [68, 91, 153, 213, 223, 234, 278, 302], // 花嫁, 武藏, 齊格魯德, 紅閻魔, 阿斯托爾福, 徵氏姊妹等
+                '劍職-全體寶具': [2, 8, 76, 90, 160, 270, 299, 317, 337], // 呆毛, 阿提拉, 莫德雷德, 215, 伊吹, 村正等
+                '弓職-單體寶具': [142, 156, 216, 276], // 弓阿爾托莉亞, 教授, 超人熊, 聖誕海倫娜
+                '弓職-全體寶具': [12, 60, 77, 84, 129, 212, 272, 350], // 金閃, 斯特, 弓凜, 貞德, 清少納言
+                '槍職-單體寶具': [70, 85, 88, 143, 312, 329], // 師匠, 布倫, 槍狐, 恩奇都, 妖蘭(單體模式), 坂本龍馬
+                '槍職-全體寶具': [119, 128, 196, 232, 280, 300, 312], // 白槍, 艾蕾, 神祖, 妖蘭(全體)
+                '騎職-單體/輔助': [65, 99, 118, 179, 205, 253, 277], // 梅芙, 拉二, 羽蛇神, 騎黑傻, 司馬懿, 尼莫
+                '騎職-全體寶具': [108, 144, 206, 241, 274, 296, 331, 342], // 德雷克, 伊斯坎達爾, 小文西, 雷帝, 太公望
+                '術職-單體/輔助': [37, 62, 113, 150, 215, 237, 284, 307], // 孔明, 玉藻, 梅林, 伊莉雅, 術傻, 鶴小姐
+                '術職-全體寶具': [127, 136, 169, 175, 201, 327], // 達文西, 尼祿, 紫式部
+                '殺職-單體寶具': [75, 86, 112, 154, 189, 199, 235], // 傑克, X毛, 王哈, 迦摩
+                '殺職-全體寶具': [139, 154, 239, 314, 365], // 酒吞, 豔后, 女帝, 殺狐
+                '狂職-單體寶具': [51, 52, 97, 114, 161, 226, 247, 306], // 金時, 大公, 狂庫, 土方, 狂X, 伽拉忒亞
+                '狂職-全體寶具': [98, 155, 261, 309, 355], // 賴光, 狂武藏, 摩根, 狂伊吹
+                'Extra-Q卡寶具': [96, 106, 163, 209, 238, 250, 275, 303, 316, 339, 346], // 伯爵, 莉莉絲, 梵谷, 道滿, 卡蓮
+                'Extra-A卡寶具': [59, 173, 195, 224, 229, 244, 265, 268, 281, 297, 321], // 仇凜, 殺生院, 北齋, 若安
+                'Extra-B卡寶具1': [93, 167, 198, 220, 268, 285, 289, 305, 334, 351, 353], // 天草, 魔神總司, 泳裝BB, 卑彌呼, 奧伯龍
+                'Extra-B卡寶具2': [106, 250, 292, 295, 324, 336, 356, 357] // 黑貞, 仇信長, 魔王信長, 庫庫爾坎
             }
         },
-        'gssr_year': {
-            name: '【福袋】依照年份區分',
+
+        // --- 日版 9 週年福袋 (2024年中) ---
+        // 特色：依「地域/章節/主題」分類，共 20 池
+        'jp_9th_anni': {
+            name: '【日GO】9週年福袋 (地域別)',
             type: 'custom',
             groups: {
-                '2015 ~ 2017 (初期)': [2, 8, 12, 37, 60, 65, 70, 75, 96],
-                '2018 ~ 2020 (中期)': [196, 198, 201, 212, 224, 237, 268],
-                '2021 ~ 2024 (近期)': [316, 353, 377, 417, 431, 444, 459]
-            }
-        },
-        'gssr_pickup': {
-            name: '【特選】輔助角色 Pick Up',
-            type: 'custom',
-            groups: {
-                '人權輔助 (必抽)': [37, 62, 113, 237, 284, 307, 327, 316],
-                '高難對策': [150, 169, 215]
+                '帕維亞 (特異點F~)': [2, 12, 37, 75, 51, 59], // 呆毛, 金閃, 孔明, 傑克, 金時, 貞德
+                '平安京 (地獄界曼荼羅)': [299, 302, 303, 297], // 伊吹, 景清, 道滿
+                '妖精圓桌領域 (LB6)': [306, 307, 312, 316, 327], // 摩根, 妖精騎士, 奧伯龍, 術傻
+                '米克特蘭 (LB7)': [371, 373, 377, 378, 380, 386], // 煙霧鏡, 庫庫爾坎, 尼托Alter
+                'Ordeal Call (奏章)': [383, 384, 393, 394, 402], // 難敵, 杜爾迦, 怖軍
+                '七章・冥界 (艾蕾Alter)': [417, 381], // 獸艾蕾 (假設ID)
+                '泳裝・夏日慶典': [212, 213, 216], // 泳裝武藏, 泳裝阿爾托莉亞
+                '泳裝・北極圈': [349, 350, 351, 353], // 泳裝伊吹, 泳裝絲卡蒂
+                'GUDAGUDA (昭和/維新)': [268, 270, 272, 329], // 魔王信長, 沖田Alter
+                '從者宇宙 (Saber Wars)': [268, 275, 276, 277] // 仇凜, 災星簡
             }
         }
     };
@@ -185,7 +206,6 @@ const app = (function() {
         const campaignConfig = campaigns[currentCampaign] || campaigns['default'];
         const isCustomCampaign = campaignConfig.type === 'custom';
 
-        // 頁尾控制：福袋模式隱藏，一般模式顯示 (回復為空字串以遵循 CSS flex 設定)
         if (footer) {
             footer.style.display = isCustomCampaign ? 'none' : '';
         }
@@ -203,6 +223,7 @@ const app = (function() {
         } else {
             Object.keys(campaignConfig.groups).forEach(poolName => {
                 const ids = campaignConfig.groups[poolName];
+                // 這裡會過濾掉 ID 不存在的 (防止 undefined)
                 const poolServants = ids.map(id => servantsData.find(s => s.id === id)).filter(s => s);
                 if (poolServants.length > 0) {
                     groupsToRender[poolName] = poolServants;
@@ -290,7 +311,6 @@ const app = (function() {
         return div;
     }
 
-    // ★ 關鍵修改：handleInteraction 支援右鍵反向循環
     function handleInteraction(id, clickType) {
         if (currentMode === 'edit_np') {
             let currentNp = userState.owned[id] || 0;
@@ -301,12 +321,10 @@ const app = (function() {
             const currentMark = userState.marks[id];
             
             if (clickType === 'left') {
-                // 左鍵 (正向): 無 -> 想要 -> 封鎖 -> 無
                 if (!currentMark) userState.marks[id] = 'wanted';
                 else if (currentMark === 'wanted') userState.marks[id] = 'blocked';
                 else delete userState.marks[id];
             } else if (clickType === 'right') {
-                // 右鍵 (反向): 無 -> 封鎖 -> 想要 -> 無
                 if (!currentMark) userState.marks[id] = 'blocked';
                 else if (currentMark === 'blocked') userState.marks[id] = 'wanted';
                 else delete userState.marks[id];
@@ -361,7 +379,7 @@ const app = (function() {
     }
 
     // ==========================================
-    // 5. 截圖功能 (Screenshot - v9.1 Remove Layout Spacing)
+    // 5. 截圖功能 (Screenshot - v9.2 Spacing & Data Update)
     // ==========================================
     function generateImage() {
         const original = document.getElementById("capture-area");
@@ -372,12 +390,10 @@ const app = (function() {
         const originalBtnText = btn ? btn.innerText : "截圖";
         if(btn) { btn.innerText = "處理中..."; btn.disabled = true; }
 
-        // 1. 建立沙盒
         const sandbox = document.createElement("div");
         Object.assign(sandbox.style, {
             position: "absolute", top: "0", left: "0", 
             width: "1280px",
-            // minHeight: "0", // 確保沙盒自己沒有最小高度
             backgroundColor: "#1a1a2e", 
             zIndex: "-9999", 
             margin: "0", padding: "0", 
@@ -386,46 +402,47 @@ const app = (function() {
             flexDirection: "column"     
         });
 
-        // 2. 建立內容包裝層
         const contentWrapper = document.createElement("div");
         Object.assign(contentWrapper.style, {
             width: "100%",      
             display: "block",
-            flex: "0 0 auto" // ★ 關鍵：禁止它自動伸展
+            flex: "0 0 auto"
         });
 
-        // 3. 複製主要內容 -> 放入 Wrapper
         const contentClone = original.cloneNode(true);
-        
-        // ★★★ 關鍵修正：強制移除繼承來的高度屬性 ★★★
-        // 這會解決因為 CSS 設定 min-height: 100vh 導致的巨大空白
         contentClone.style.minHeight = "0";
         contentClone.style.height = "auto";
-        contentClone.style.paddingBottom = "0"; // 移除可能的底部留白
-        contentClone.style.marginBottom = "0";  // 移除可能的底部邊距
+        contentClone.style.paddingBottom = "0"; 
+        contentClone.style.marginBottom = "0";  
         
         contentWrapper.appendChild(contentClone);
 
-        // 強制 CSS
         const styleReset = document.createElement("style");
         styleReset.innerHTML = `
-            /* 強制重置容器高度 */
             #capture-area { min-height: 0 !important; height: auto !important; }
             
+            /* ★ 修正：截圖中的間距調整 */
+            .class-section { 
+                margin-bottom: 5px !important; /* 縮小區塊間距 */
+                margin-top: 5px !important;
+            }
+            .class-header {
+                margin-bottom: 5px !important; /* 縮小標題與卡片間距 */
+            }
+
             .servant-grid { 
                 display: grid !important; 
                 grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; 
                 gap: 8px !important; 
                 width: 100% !important; 
                 box-sizing: border-box !important;
-                padding-bottom: 20px !important; /* 只留一點點縫隙 */
+                padding-bottom: 15px !important; /* 調整為較小的底部縫隙 */
             }
             .np-level { font-size: 1rem !important; } 
             .pool-stats { background: #222 !important; border: 1px solid #444 !important; }
         `;
         sandbox.appendChild(styleReset);
 
-        // 4. 複製頁尾 (僅在一般模式)
         if (currentCampaign === 'default' && footer) {
             const footerClone = footer.cloneNode(true);
             Object.assign(footerClone.style, {
@@ -435,7 +452,7 @@ const app = (function() {
                 backgroundColor: "#16213e",
                 borderTop: "1px solid #444", 
                 padding: "20px 0", 
-                marginTop: "0", // 緊貼上方
+                marginTop: "0", 
                 display: "flex", 
                 justifyContent: "center",
                 alignItems: "center",
@@ -447,7 +464,6 @@ const app = (function() {
 
         sandbox.appendChild(contentWrapper);
 
-        // 5. 新增浮水印
         const watermark = document.createElement("div");
         watermark.innerHTML = `
             <span style="opacity: 0.6;">Created by</span> 
@@ -465,7 +481,7 @@ const app = (function() {
             borderTop: "1px solid #333",
             backgroundColor: "#16213e",
             boxSizing: "border-box",
-            marginTop: "0",    // 不再需要額外 margin，靠 grid 的 padding 即可
+            marginTop: "0",
             flexShrink: "0" 
         });
         sandbox.appendChild(watermark);
@@ -477,7 +493,7 @@ const app = (function() {
             window.scrollTo(0, 0);
 
             html2canvas(sandbox, {
-                scale: 1.0, 
+                scale: 1.0,  // ★ 依需求修正：Scale 1.0
                 useCORS: true,
                 backgroundColor: "#1a1a2e",
                 width: 1280, height: fullHeight, 
@@ -525,10 +541,9 @@ const app = (function() {
             });
         }, 400);
     }
+    // ===============================================
 
-    // ==========================================
-    // 6. I/O (Export/Import/Clear)
-    // ==========================================
+    // I/O 功能保持不變
     function exportSave() {
         const blob = new Blob([JSON.stringify(userState, null, 2)], {type: "application/json"});
         const url = URL.createObjectURL(blob);
@@ -586,11 +601,3 @@ const app = (function() {
     };
 
 })();
-
-
-
-
-
-
-
-
