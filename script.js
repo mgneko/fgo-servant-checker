@@ -24,7 +24,7 @@ const app = (function() {
 
     const twReleaseLimit = {
         'saber': 19, 'archer': 15, 'lancer': 14, 'rider': 18, 'caster': 15, 'assassin': 13, 'berserker': 15,
-        'ruler': 12, 'avenger': 8, 'alterego': 10, 'foreigner': 10, 'mooncancer': 4, 'pretender': 2,
+        'ruler': 12, 'avenger': 10, 'alterego': 10, 'foreigner': 10, 'mooncancer': 4, 'pretender': 2,
         'beast': 1, 'unbeast': 0, 'shielder': 0
     };
 
@@ -605,6 +605,7 @@ const app = (function() {
     };
 
 })();
+
 
 
 
